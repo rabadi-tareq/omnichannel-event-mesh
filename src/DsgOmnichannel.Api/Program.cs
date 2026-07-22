@@ -19,6 +19,12 @@ builder.Services.AddApiHealthChecks(builder.Configuration);
 // 2. Register MassTransit with RabbitMQ
 builder.Services.AddMassTransit(x =>
 {
+    x.AddEntityFrameworkOutbox<ApplicationDbContext>(options =>
+    {
+        options.UseSqlServer();
+        options.UseBusOutbox();
+    });
+
     x.UsingRabbitMq((context, cfg) =>
     {
         var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
