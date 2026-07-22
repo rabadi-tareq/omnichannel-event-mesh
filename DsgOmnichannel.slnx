@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="docker-compose.yml" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/DsgOmnichannel.Api/DsgOmnichannel.Api.csproj" />
+    <Project Path="src/DsgOmnichannel.Contracts/DsgOmnichannel.Contracts.csproj" />
+    <Project Path="src/DsgOmnichannel.Domain/DsgOmnichannel.Domain.csproj" />
+    <Project Path="src/DsgOmnichannel.Infrastructure/DsgOmnichannel.Infrastructure.csproj" />
+    <Project Path="src/DsgOmnichannel.Worker/DsgOmnichannel.Worker.csproj" />
+  </Folder>
+</Solution>

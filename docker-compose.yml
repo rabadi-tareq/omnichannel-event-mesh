@@ -1,0 +1,22 @@
+
+services:
+  dsg-sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: dsg-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourSecurePassword123!
+    ports:
+      - "1433:1433"
+    restart: always
+
+  dsg-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: dsg-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP protocol
+      - "15672:15672" # Management Dashboard
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    restart: always
