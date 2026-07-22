@@ -8,6 +8,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Order> Orders => Set<Order>();
+    public DbSet<StoreInventory> StoreInventories => Set<StoreInventory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,8 +26,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Order>(builder =>
         {
             builder.HasKey(x => x.Id);
-            builder.Property(x => x.CustomerName).HasMaxLength(200).IsRequired();
+            builder.Property(x => x.CustomerName).HasMaxLength(100).IsRequired();
+            builder.Property(x => x.SKU).HasMaxLength(50);
             builder.Property(x => x.TotalAmount).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<StoreInventory>(builder =>
+        {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.StoreId).HasMaxLength(50).IsRequired();
+            builder.Property(x => x.SKU).HasMaxLength(50).IsRequired();
         });
     }
 }
