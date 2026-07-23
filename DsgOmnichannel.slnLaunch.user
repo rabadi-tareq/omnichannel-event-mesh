@@ -5,10 +5,6 @@
       {
         "Path": "src\\DsgOmnichannel.Api\\DsgOmnichannel.Api.csproj",
         "Action": "Start"
-      },
-      {
-        "Path": "src\\DsgOmnichannel.Worker\\DsgOmnichannel.Worker.csproj",
-        "Action": "Start"
       }
     ]
   }

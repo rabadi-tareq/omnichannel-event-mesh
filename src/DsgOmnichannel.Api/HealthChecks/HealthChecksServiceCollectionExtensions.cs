@@ -1,5 +1,7 @@
+using DsgOmnichannel.Api.Messaging;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
 namespace DsgOmnichannel.Api.HealthChecks;
@@ -12,10 +14,19 @@ internal static class HealthChecksServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         var databaseConnectionString = configuration.GetRequiredMasterDatabaseConnectionString();
-        var rabbitMqConnectionString = configuration.GetRabbitMqConnectionString();
 
-        services.AddSingleton<IConnection>(_ =>
+        services.AddSingleton<IConnection>(sp =>
         {
+            var rabbitMqOptions = sp.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
+            var rabbitMqVirtualHost = rabbitMqOptions.VirtualHost;
+
+            if (!rabbitMqVirtualHost.StartsWith('/'))
+            {
+                rabbitMqVirtualHost = $"/{rabbitMqVirtualHost}";
+            }
+
+            var rabbitMqConnectionString = $"amqp://{rabbitMqOptions.Username}:{rabbitMqOptions.Password}@{rabbitMqOptions.Host}{rabbitMqVirtualHost}";
+
             var factory = new ConnectionFactory
             {
                 Uri = new Uri(rabbitMqConnectionString),
@@ -53,26 +64,5 @@ internal static class HealthChecksServiceCollectionExtensions
         };
 
         return connectionStringBuilder.ConnectionString;
-    }
-
-    private static string GetRabbitMqConnectionString(this IConfiguration configuration)
-    {
-        var rabbitMqConnectionString = configuration.GetConnectionString("RabbitMQ");
-        if (!string.IsNullOrWhiteSpace(rabbitMqConnectionString))
-        {
-            return rabbitMqConnectionString;
-        }
-
-        var rabbitMqHost = configuration["RabbitMQ:Host"] ?? "localhost";
-        var rabbitMqUsername = configuration["RabbitMQ:Username"] ?? "guest";
-        var rabbitMqPassword = configuration["RabbitMQ:Password"] ?? "guest";
-        var rabbitMqVirtualHost = configuration["RabbitMQ:VirtualHost"] ?? "/";
-
-        if (!rabbitMqVirtualHost.StartsWith('/'))
-        {
-            rabbitMqVirtualHost = $"/{rabbitMqVirtualHost}";
-        }
-
-        return $"amqp://{rabbitMqUsername}:{rabbitMqPassword}@{rabbitMqHost}{rabbitMqVirtualHost}";
     }
 }
