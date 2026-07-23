@@ -8,36 +8,46 @@ using Microsoft.AspNetCore.Mvc;
 namespace DsgOmnichannel.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/orders")]
 public class OrdersController(ApplicationDbContext dbContext, IPublishEndpoint publishEndpoint) : ControllerBase
 {
-    private readonly ApplicationDbContext _dbContext = dbContext;
-    private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
-
     [HttpPost]
-    public async Task<IActionResult> PlaceOrderAsync([FromBody] PlaceOrderRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request, CancellationToken cancellationToken)
     {
         var order = new Order
         {
             CustomerName = request.CustomerName,
+            SKU = request.SKU,
+            Quantity = request.Quantity,
             TotalAmount = request.TotalAmount,
+            Status = "Submitted",
+            CreatedAtUtc = DateTime.UtcNow
         };
 
-        _dbContext.Orders.Add(order);
+        dbContext.Orders.Add(order);
 
-        var orderPlacedEvent = new OrderPlacedEvent(order.Id, order.CustomerName, order.SKU, order.Quantity, order.TotalAmount, order.CreatedAtUtc);
-        await _publishEndpoint.Publish(orderPlacedEvent, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await publishEndpoint.Publish(
+            new OrderPlacedEvent(order.Id, order.CustomerName, order.SKU, order.Quantity, order.TotalAmount, order.CreatedAtUtc),
+            cancellationToken);
 
-        return Created($"/api/orders/{order.Id}", new { order.Id, order.CustomerName, order.TotalAmount, order.CreatedAtUtc });
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Created($"/api/orders/{order.Id}", order);
     }
 }
 
-public class PlaceOrderRequest
+public class CreateOrderRequest
 {
     [Required]
     [StringLength(200)]
     public string CustomerName { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(100)]
+    public string SKU { get; set; } = string.Empty;
+
+    [Range(1, int.MaxValue)]
+    public int Quantity { get; set; }
 
     [Range(typeof(decimal), "0.01", "79228162514264337593543950335")]
     public decimal TotalAmount { get; set; }
