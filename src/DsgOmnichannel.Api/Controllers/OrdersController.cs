@@ -17,17 +17,18 @@ public class OrdersController(ApplicationDbContext dbContext, IPublishEndpoint p
         var order = new Order
         {
             CustomerName = request.CustomerName,
-            SKU = request.SKU,
+            StoreId = request.StoreId,
+            ProductId = request.ProductId,
             Quantity = request.Quantity,
             TotalAmount = request.TotalAmount,
             Status = "Submitted",
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         dbContext.Orders.Add(order);
 
         await publishEndpoint.Publish(
-            new OrderPlacedEvent(order.Id, order.CustomerName, order.SKU, order.Quantity, order.TotalAmount, order.CreatedAtUtc),
+            new OrderPlacedEvent(order.Id, request.StoreId, order.CustomerName, order.ProductId, order.Quantity, order.TotalAmount, order.CreatedAt),
             cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -39,12 +40,16 @@ public class OrdersController(ApplicationDbContext dbContext, IPublishEndpoint p
 public class CreateOrderRequest
 {
     [Required]
+    [StringLength(50)]
+    public string StoreId { get; set; } = string.Empty;
+
+    [Required]
     [StringLength(200)]
     public string CustomerName { get; set; } = string.Empty;
 
     [Required]
     [StringLength(100)]
-    public string SKU { get; set; } = string.Empty;
+    public string ProductId { get; set; } = string.Empty;
 
     [Range(1, int.MaxValue)]
     public int Quantity { get; set; }

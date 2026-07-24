@@ -2,7 +2,7 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
-namespace DsgOmnichannel.Infrastructure.Messaging;
+namespace DsgOmnichannel.Worker.Consumers;
 
 public class PingEventConsumer : IConsumer<PingEvent>
 {

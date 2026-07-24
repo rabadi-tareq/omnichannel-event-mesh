@@ -26,8 +26,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Order>(builder =>
         {
             builder.HasKey(x => x.Id);
+            builder.Property(x => x.StoreId).HasMaxLength(50).IsRequired();
             builder.Property(x => x.CustomerName).HasMaxLength(100).IsRequired();
-            builder.Property(x => x.SKU).HasMaxLength(50);
+            builder.Property(x => x.ProductId).HasMaxLength(50);
             builder.Property(x => x.TotalAmount).HasPrecision(18, 2);
         });
 
@@ -35,7 +36,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             builder.HasKey(x => x.Id);
             builder.Property(x => x.StoreId).HasMaxLength(50).IsRequired();
-            builder.Property(x => x.SKU).HasMaxLength(50).IsRequired();
+            builder.Property(x => x.ProductId).HasMaxLength(50).IsRequired();
         });
     }
 }

@@ -43,6 +43,7 @@ ScaffoldingReadMe.txt
 ~$*
 *~
 CodeCoverage/
+*.DotSettings.user
 
 # MSBuild Binary and Structured Log
 *.binlog
@@ -58,3 +59,5 @@ nunit-*.xml
 
 
 .vs/
+/src/DsgOmnichannel.Api/app.http
+/documentation/DataFlowDiagram.txt

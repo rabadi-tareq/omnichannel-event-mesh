@@ -3,6 +3,6 @@ namespace DsgOmnichannel.Contracts.Events;
 public record AllocationFailedEvent(
     Guid OrderId,
     string StoreId,
-    string SKU,
+    string ProductId,
     string Reason,
     DateTime FailedAtUtc);

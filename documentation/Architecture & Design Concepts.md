@@ -1,38 +1,22 @@
 # Architecture & Design Concepts — DSG Omnichannel Engine
 
 ## Milestone 0: Infrastructure & Messaging Setup
-
-### 1. Clean Architecture & Solution Decoupling
-Decoupling the API host from worker processing, domain models, contracts, and infrastructure prevents circular dependencies and isolates core business logic from framework choices. Controllers depend on abstract contracts and interfaces rather than concrete infrastructure implementations.
-
-### 2. Infrastructure Isolation & Database Persistence
-Running SQL Server and RabbitMQ in Docker Compose allows local environment parity with cloud infrastructure. Utilizing Docker named volumes (e.g., `dsg-sqldata:/var/opt/mssql`) ensures database schemas, migrations, and transactional tables persist across container restarts, allowing daily execution via `docker compose stop` and `start`.
-
----
+* **Clean Architecture & Solution Decoupling**: Decoupling the API host from worker processing, domain models, contracts, and infrastructure prevents circular dependencies and isolates core business logic from framework choices.[cite: 1] Controllers depend on abstract contracts and interfaces rather than concrete infrastructure implementations.[cite: 1]
+* **Infrastructure Isolation & Database Persistence**: Running SQL Server and RabbitMQ in Docker Compose allows local environment parity with cloud infrastructure.[cite: 1] Utilizing Docker named volumes (e.g., `dsg-sqldata:/var/opt/mssql`) ensures database schemas, migrations, and transactional tables persist across container restarts, allowing daily execution via `docker compose stop` and `start`.[cite: 1]
 
 ## Milestone 1: Domain Entities, Event Contracts & Security Baseline
-
-### 3. Pure POCO Domain Entities (`DsgOmnichannel.Domain`)
-Domain entities represent core business state (e.g., `Order`, `StoreInventory`) without dependencies on external frameworks like EF Core or ASP.NET Core. Keeping entities pure isolates domain rules from database storage mechanics.
-
-### 4. Strongly-Typed Shared Contracts (`DsgOmnichannel.Contracts`)
-Events represent immutable facts that occurred in the domain (e.g., `OrderPlacedEvent`, `StoreInventoryAllocatedEvent`). Placing these contract definitions in a shared assembly allows both publishing services (`Api`) and consuming services (`Worker`) to communicate without coupling their internal implementation details.
-
-### 5. Policy-Based JWT Authorization & Pipeline Security (`DsgOmnichannel.Api`)
-Registering `UseAuthentication` and `UseAuthorization` middleware configures the request pipeline to evaluate incoming JWT bearer tokens. Decorating routes with `[Authorize(Policy = "...")]` enforces identity checks prior to action execution, returning `401 Unauthorized` for missing/invalid tokens while exposing authenticated user claims (`UserId`) for downstream propagation.
-
-### 6. Security Context Verification Endpoints (`TestController`)
-Creating explicit public (`GET /api/test/public`) and protected (`GET /api/test/secured`) test endpoints verifies that authentication handlers and policy evaluation rules function correctly within the ASP.NET Core request pipeline before building full domain actions.
-
----
+* **Pure POCO Domain Entities (`DsgOmnichannel.Domain`)**: Domain entities represent core business state (e.g., `Order`, `StoreInventory`) without dependencies on external frameworks like EF Core or ASP.NET Core.[cite: 1] Keeping entities pure isolates domain rules from database storage mechanics.[cite: 1]
+* **Strongly-Typed Shared Contracts (`DsgOmnichannel.Contracts`)**: Events represent immutable facts that occurred in the domain (e.g., `OrderPlacedEvent`, `StoreInventoryAllocatedEvent`).[cite: 1] Placing these contract definitions in a shared assembly allows both publishing services (`Api`) and consuming services (`Worker`) to communicate without coupling their internal implementation details.[cite: 1]
+* **Policy-Based JWT Authorization & Pipeline Security (`DsgOmnichannel.Api`)**: Registering `UseAuthentication` and `UseAuthorization` middleware configures the request pipeline to evaluate incoming JWT bearer tokens.[cite: 1] Decorating routes with `[Authorize(Policy = "...")]` enforces identity checks prior to action execution, returning `401 Unauthorized` for missing/invalid tokens while exposing authenticated user claims (`UserId`) for downstream propagation.[cite: 1]
+* **Security Context Verification Endpoints (`TestController`)**: Creating explicit public (`GET /api/test/public`) and protected (`GET /api/test/secured`) test endpoints verifies that authentication handlers and policy evaluation rules function correctly within the ASP.NET Core request pipeline before building full domain actions.[cite: 1]
 
 ## Milestone 2: Transactional Outbox & Order Submission
+* **MassTransit Outbox Configuration & Entity Mapping (`ApplicationDbContext`)**: To guarantee consistency across database writes and message publishing without 2-Phase Commit (2PC) protocols, MassTransit integrates directly with EF Core.[cite: 1] Calling `modelBuilder.AddTransactionalOutboxEntities()` maps internal tables (`OutboxMessage`, `OutboxState`, `InboxState`) into EF Core metadata, allowing outbox operations to participate directly in local SQL transactions.[cite: 1]
+* **Atomic Dual-Write Staging (`POST /api/orders`)**: The Transactional Outbox pattern resolves dual-write vulnerabilities.[cite: 1] When an order is created, the `Order` entity is saved and `IPublishEndpoint.Publish()` stages the `OrderPlacedEvent` into `OutboxMessage` inside the same database context.[cite: 1] Executing `SaveChangesAsync()` commits both the domain change and the outbound message atomically.[cite: 1]
+* **Broker Outage Resilience & Automatic Outbox Draining (Chaos Test #1)**: If the message broker (RabbitMQ) is offline during an order request, the HTTP request completes successfully with `201 Created` because the event is safely stored in local database storage.[cite: 1] Once broker connectivity is restored, MassTransit's outbox background process polls `OutboxMessage`, dispatches the pending messages to RabbitMQ, and cleans up the outbox records.[cite: 1]
 
-### 7. MassTransit Outbox Configuration & Entity Mapping (`ApplicationDbContext`)
-To guarantee consistency across database writes and message publishing without 2-Phase Commit (2PC) protocols, MassTransit integrates directly with EF Core. Calling `modelBuilder.AddTransactionalOutboxEntities()` maps internal tables (`OutboxMessage`, `OutboxState`, `InboxState`) into EF Core metadata, allowing outbox operations to participate directly in local SQL transactions.
-
-### 8. Atomic Dual-Write Staging (`POST /api/orders`)
-The Transactional Outbox pattern resolves dual-write vulnerabilities. When an order is created, the `Order` entity is saved and `IPublishEndpoint.Publish()` stages the `OrderPlacedEvent` into `OutboxMessage` inside the same database context. Executing `SaveChangesAsync()` commits both the domain change and the outbound message atomically.
-
-### 9. Broker Outage Resilience & Automatic Outbox Draining (Chaos Test #1)
-If the message broker (RabbitMQ) is offline during an order request, the HTTP request completes successfully with `201 Created` because the event is safely stored in local database storage. Once broker connectivity is restored, MassTransit's outbox background process polls `OutboxMessage`, dispatches the pending messages to RabbitMQ, and cleans up the outbox records.
+## Milestone 3: Background Worker Processing & Consumer Idempotency
+* **Consumer Idempotency & MassTransit Inbox Pattern (`InboxState`)**: At-least-once message delivery in distributed systems introduces duplicate message risks.[cite: 1] MassTransit handles deduplication automatically via the Inbox Pattern.[cite: 1] Before executing a consumer, MassTransit checks the `MessageId` header against the `InboxState` SQL Server table.[cite: 1] If present, the duplicate message is acknowledged and discarded; if absent, a tracking record is saved, and the message processes within a local database transaction.[cite: 1]
+* **Automated Inbox Garbage Collection**: To prevent `InboxState` tables from expanding indefinitely, MassTransit runs a background sweep that deletes processed records after a set duplicate detection window (e.g., 24 hours), preserving long-term SQL Server performance while maintaining resilience.[cite: 1]
+* **Event Contracts & Serialization**: Events published to the broker must be wrapped in a MassTransit Envelope containing routing metadata and fully populated contract properties. Raw JSON bypassing the `IPublishEndpoint` or missing mandatory fields (like `CustomerName`) causes deserialization faults and routes messages directly to the dead-letter queue (DLQ).
+* **Distributed Workflows & Sagas (Milestone 4 Focus)**: Since there is no global database transaction spanning multiple microservices, business processes must rely on eventual consistency. When a local transaction fails a business rule (e.g., Insufficient Inventory), it must gracefully stop and publish a "Failure/Rejected" event. A Saga orchestrator listens for this to execute compensating actions.
