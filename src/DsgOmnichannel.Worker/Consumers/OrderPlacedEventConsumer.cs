@@ -52,8 +52,8 @@ public class OrderPlacedEventConsumer : IConsumer<OrderPlacedEvent>
             if (storeInventory == null || storeInventory.Quantity < message.Quantity)
             {
                 var reason = storeInventory == null
-                    ? "Store inventory record not found"
-                    : $"Insufficient inventory. Required: {message.Quantity}, Available: {storeInventory.Quantity}";
+                    ? $"Inventory record for product '{message.ProductId}' does not exist at store '{message.StoreId}'."
+                    : $"Insufficient stock for product '{message.ProductId}' at store '{message.StoreId}'. Requested: {message.Quantity}, Available: {storeInventory.Quantity}.";
 
                 _logger.LogWarning(
                     ">>> [OrderPlacedEventConsumer] Allocation failed for OrderId={OrderId}. Reason: {Reason}",

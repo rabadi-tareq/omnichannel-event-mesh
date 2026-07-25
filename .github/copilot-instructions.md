@@ -41,3 +41,12 @@ When generating code, adhere strictly to the existing solution layout:
 * **Response Type**: Generate simple, inline examples in the chat when asked (e.g., SQL queries, curl commands, HTTP payloads). Only create files when explicitly requested. Keep responses concise and focused.
 * **Minimal Context Gathering**: Avoid excessive exploration of the codebase before responding. Read only what's necessary to answer the specific question.
 * **Verify Configuration Before Generating Examples**: Always check `launchSettings.json` for actual port and protocol before generating HTTP requests or commands targeting the API. Never assume http://localhost:5000 - verify the actual configuration.
+
+## 7. Available Skills
+When the user asks to generate or refresh solution documentation, use the skill files below for detailed execution instructions.
+
+* **solution-schema-and-contracts** — Inspects the solution and writes `documentation\Solution Schema & Contracts.md` covering endpoints, DTOs, domain entities, event contracts, and saga state.
+  Skill file: `.github\skills\solution-schema-and-contracts\SKILL.md`
+
+* **solution-code-tree-diagram** — Produces a code-aware ASCII tree of projects, folders, and top-level types.
+  Skill file: `.github\skills\solution-code-tree-diagram\SKILL.md`

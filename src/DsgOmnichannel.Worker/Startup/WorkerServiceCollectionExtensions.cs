@@ -1,5 +1,8 @@
 using DsgOmnichannel.Infrastructure.Persistence;
+using DsgOmnichannel.Infrastructure.Persistence.Sagas;
 using DsgOmnichannel.Worker.Consumers;
+using DsgOmnichannel.Worker.Extensions;
+using DsgOmnichannel.Worker.Sagas;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,6 +44,15 @@ internal static class WorkerServiceCollectionExtensions
             // Register consumers
             x.AddConsumer<OrderPlacedEventConsumer>();
             x.AddConsumer<PingEventConsumer>();
+            x.AddConsumer<OrderStatusHistoryConsumer>();
+
+            // Register the order saga state machine using EF Core persistence
+            x.AddSagaStateMachine<OrderStateMachine, OrderState>()
+                .EntityFrameworkRepository(r =>
+                {
+                    r.ExistingDbContext<ApplicationDbContext>();
+                    r.UseSqlServer();
+                });
 
             // Configure EF Core outbox and inbox persistence
             x.AddEntityFrameworkOutbox<ApplicationDbContext>(options =>
@@ -50,6 +62,7 @@ internal static class WorkerServiceCollectionExtensions
 
             x.AddConfigureEndpointsCallback((context, name, cfg) =>
             {
+                cfg.UseConsumerRetryPolicy();
                 cfg.UseEntityFrameworkOutbox<ApplicationDbContext>(context);
             });
 
