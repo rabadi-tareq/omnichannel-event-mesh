@@ -17,6 +17,7 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
 
         Event(() => OrderPlaced, x => x.CorrelateById(context => context.Message.OrderId));
         Event(() => AllocationFailed, x => x.CorrelateById(context => context.Message.OrderId));
+        Event(() => OrderPickedUp, x => x.CorrelateById(context => context.Message.OrderId));
 
         Initially(
             When(OrderPlaced)
@@ -46,11 +47,18 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
                     }
                 })
                 .TransitionTo(Faulted));
-    }
 
-    public State Processing { get; private set; } = null!;
-    public State Faulted { get; private set; } = null!;
+                        During(Processing,
+                            When(OrderPickedUp)
+                                .Finalize());
 
-    public Event<OrderPlacedEvent> OrderPlaced { get; private set; } = null!;
-    public Event<AllocationFailedEvent> AllocationFailed { get; private set; } = null!;
+                        SetCompletedWhenFinalized();
+                    }
+
+                    public State Processing { get; private set; } = null!;
+                    public State Faulted { get; private set; } = null!;
+
+                    public Event<OrderPlacedEvent> OrderPlaced { get; private set; } = null!;
+                    public Event<AllocationFailedEvent> AllocationFailed { get; private set; } = null!;
+                    public Event<OrderPickedUpEvent> OrderPickedUp { get; private set; } = null!;
 }

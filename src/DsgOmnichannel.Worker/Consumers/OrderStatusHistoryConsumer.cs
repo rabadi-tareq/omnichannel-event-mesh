@@ -8,7 +8,8 @@ namespace DsgOmnichannel.Worker.Consumers;
 public class OrderStatusHistoryConsumer :
     IConsumer<OrderPlacedEvent>,
     IConsumer<StoreInventoryAllocatedEvent>,
-    IConsumer<AllocationFailedEvent>
+    IConsumer<AllocationFailedEvent>,
+    IConsumer<OrderPickedUpEvent>
 {
     private readonly ApplicationDbContext _dbContext;
 
@@ -53,6 +54,20 @@ public class OrderStatusHistoryConsumer :
             OrderId = context.Message.OrderId,
             Status = "AllocationFailed",
             Reason = context.Message.Reason,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+
+        await _dbContext.SaveChangesAsync(context.CancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task Consume(ConsumeContext<OrderPickedUpEvent> context)
+    {
+        _dbContext.OrderStatusHistories.Add(new OrderStatusHistory
+        {
+            Id = NewId.NextGuid(),
+            OrderId = context.Message.OrderId,
+            Status = "PickedUp",
+            Reason = $"Confirmed by associate {context.Message.AssociateId}",
             CreatedAtUtc = DateTime.UtcNow
         });
 

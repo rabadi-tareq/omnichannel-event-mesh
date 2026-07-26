@@ -19,6 +19,9 @@ export class SignalRService {
   public latestUpdate = signal<OrderStatusUpdate | null>(null);
   public connectionState = signal<string>('Disconnected');
 
+  // Per-order status map keyed by orderId
+  public orderStatuses = signal<Record<string, OrderStatusUpdate>>({});
+
   public startConnection(): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
@@ -47,6 +50,7 @@ export class SignalRService {
   private registerOrderStateListener(): void {
     this.hubConnection.on('ReceiveOrderUpdate', (update: OrderStatusUpdate) => {
       this.latestUpdate.set(update);
+      this.orderStatuses.update(current => ({ ...current, [update.orderId]: update }));
     });
   }
 }

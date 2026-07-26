@@ -17,6 +17,23 @@
         <p><strong>Order ID:</strong> {{ update.orderId }}</p>
         <p><strong>Status:</strong> <span class="status-tag">{{ update.status }}</span></p>
         <p><strong>Timestamp:</strong> {{ update.timestamp | date:'mediumTime' }}</p>
+
+        @if (signalRService.orderStatuses()[update.orderId]?.status === 'ReadyForPickup') {
+        <div class="pickup-action">
+          <button
+            class="btn-pickup"
+            [disabled]="pickupPending()[update.orderId]"
+            (click)="confirmPickup(update.orderId)">
+            {{ pickupPending()[update.orderId] ? 'Confirming...' : 'Confirm Pickup' }}
+          </button>
+        </div>
+        }
+
+        @if (signalRService.orderStatuses()[update.orderId]?.status === 'PickedUp') {
+        <div class="pickup-action">
+          <span class="badge-picked-up">Picked Up ✓</span>
+        </div>
+        }
       </div>
       } @else {
       <p class="placeholder-text">Waiting for order updates from event mesh...</p>

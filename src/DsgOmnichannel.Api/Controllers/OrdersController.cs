@@ -35,6 +35,32 @@ public class OrdersController(ApplicationDbContext dbContext, IPublishEndpoint p
 
         return Created($"/api/orders/{order.Id}", order);
     }
+
+    [HttpPost("{id:guid}/pickup")]
+    public async Task<IActionResult> ConfirmPickup(Guid id, [FromBody] ConfirmPickupRequest request, CancellationToken cancellationToken)
+    {
+        var order = await dbContext.Orders.FindAsync([id], cancellationToken);
+        if (order is null)
+            return NotFound();
+
+        if (order.Status != "Allocated")
+            return Conflict(new { error = $"Order is not in a pickable state. Current status: {order.Status}" });
+
+        await publishEndpoint.Publish(
+            new OrderPickedUpEvent(order.Id, order.StoreId, request.AssociateId, DateTime.UtcNow),
+            cancellationToken);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { orderId = order.Id, status = "PickedUp" });
+    }
+}
+
+public class ConfirmPickupRequest
+{
+    [Required]
+    [StringLength(100)]
+    public string AssociateId { get; set; } = string.Empty;
 }
 
 public class CreateOrderRequest

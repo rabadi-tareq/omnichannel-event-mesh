@@ -43,8 +43,8 @@ internal static class WorkerServiceCollectionExtensions
         {
             // Register consumers
             x.AddConsumer<OrderPlacedEventConsumer>();
-            x.AddConsumer<PingEventConsumer>();
             x.AddConsumer<OrderStatusHistoryConsumer>();
+            x.AddConsumer<OrderPickedUpConsumer>();
 
             // Register the order saga state machine using EF Core persistence
             x.AddSagaStateMachine<OrderStateMachine, OrderState>()

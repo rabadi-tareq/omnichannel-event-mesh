@@ -8,7 +8,8 @@ namespace DsgOmnichannel.Api.Consumers;
 public class OrderStatusNotificationConsumer :
     IConsumer<OrderPlacedEvent>,
     IConsumer<StoreInventoryAllocatedEvent>,
-    IConsumer<AllocationFailedEvent>
+    IConsumer<AllocationFailedEvent>,
+    IConsumer<OrderPickedUpEvent>
 {
     private readonly IHubContext<OrderHub> _hubContext;
 
@@ -43,6 +44,16 @@ public class OrderStatusNotificationConsumer :
         {
             orderId = context.Message.OrderId,
             status = "AllocationFailed",
+            timestamp = DateTime.UtcNow
+        });
+    }
+
+    public async Task Consume(ConsumeContext<OrderPickedUpEvent> context)
+    {
+        await _hubContext.Clients.All.SendAsync("ReceiveOrderUpdate", new
+        {
+            orderId = context.Message.OrderId,
+            status = "PickedUp",
             timestamp = DateTime.UtcNow
         });
     }

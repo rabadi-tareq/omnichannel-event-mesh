@@ -13,7 +13,6 @@ internal static class ApiEndpointRouteBuilderExtensions
         endpoints.MapGet("/", () => Results.Redirect("/swagger"));
         endpoints.MapHub<OrderHub>("/hubs/order");
         endpoints.MapApiHealthEndpoint();
-        endpoints.MapTestPublishEndpoint();
 
         return endpoints;
     }
