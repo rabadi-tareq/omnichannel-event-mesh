@@ -1,3 +1,4 @@
+using DsgOmnichannel.Api.Consumers;
 using DsgOmnichannel.Infrastructure.Persistence;
 using MassTransit;
 using Microsoft.Extensions.Options;
@@ -12,6 +13,8 @@ internal static class MassTransitServiceCollectionExtensions
 
         services.AddMassTransit(x =>
         {
+            x.AddConsumer<OrderStatusNotificationConsumer>();
+
             x.AddEntityFrameworkOutbox<ApplicationDbContext>(options =>
             {
                 options.UseSqlServer();

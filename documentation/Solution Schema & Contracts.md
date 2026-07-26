@@ -1,4 +1,4 @@
-# Solution Schema & Contracts
+﻿# Solution Schema & Contracts
 **DSG Omnichannel Engine — Generated from codebase**
 
 ---
@@ -10,78 +10,130 @@
 | Profile | URL |
 |---------|-----|
 | `http` | `http://localhost:5140` |
-| `https` | `https://localhost:7156` and `http://localhost:5140` |
+| `https` | `https://localhost:7156` / `http://localhost:5140` |
 
 ---
 
 ### `OrdersController` — `api/orders`
 
 #### `POST /api/orders`
-Creates a new order, persists it to the database, and publishes an `OrderPlacedEvent` via the EF Core Transactional Outbox. No authorization is required.
+Creates a new order, persists it to the database, and publishes an `OrderPlacedEvent` to the MassTransit outbox.
+
+**Authorization:** Anonymous
 
 **Request body** (`CreateOrderRequest`):
 ```json
 {
   "storeId": "STORE-001",
   "customerName": "Jane Smith",
-  "productId": "SKU-9912",
+  "productId": "PROD-ABC",
   "quantity": 2,
   "totalAmount": 49.99
 }
 ```
 
-**Response:** `201 Created` — returns the full `Order` entity (including generated `Id` and `CreatedAt`) in the response body. Location header is set to `/api/orders/{id}`.
+**Response:** `201 Created` — returns the created `Order` entity. Location header set to `/api/orders/{id}`.
 
 ---
 
 ### `TestController` — `api/test`
 
 #### `GET /api/test/public`
-Returns a plain string confirming the public endpoint is accessible. No authorization required (`[AllowAnonymous]`).
+Smoke endpoint with no authentication required.
 
-**Response:** `200 OK` — returns the string `"Public endpoint accessible"`.
+**Authorization:** `[AllowAnonymous]`
+
+**Response:** `200 OK` — `"Public endpoint accessible"`
 
 ---
 
 #### `GET /api/test/secured`
-Returns the authenticated user's JWT claims. Requires the `RequireCustomerRole` authorization policy.
+Returns the caller's JWT claims. Requires the `RequireCustomerRole` policy.
 
-**Response:** `200 OK` — returns a JSON object containing a `Message` string and a `Claims` array of `{ type, value }` pairs.
+**Authorization:** `[Authorize(Policy = "RequireCustomerRole")]`
+
+**Response:** `200 OK`
+```json
+{
+  "message": "Secured endpoint accessed",
+  "claims": [{ "type": "...", "value": "..." }]
+}
+```
 
 ---
 
 #### `POST /api/test/publish-order-event`
-Publishes an `OrderPlacedEvent` directly to RabbitMQ via the EF Core Outbox without creating an `Order` record in the database. Designed for integration testing and retry/idempotency validation. No authorization required (`[AllowAnonymous]`).
+Manually publishes an `OrderPlacedEvent` to the bus. Used for integration testing.
+
+**Authorization:** `[AllowAnonymous]`
 
 **Request body** (`PublishOrderEventTestRequest`):
 ```json
 {
   "messageId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "orderId": "a1b2c3d4-0000-0000-0000-000000000001",
+  "orderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "storeId": "STORE-001",
-  "customerName": "FAIL_RETRY",
-  "productId": "SKU-9912",
+  "customerName": "Test Customer",
+  "productId": "PROD-ABC",
   "quantity": 1,
-  "totalAmount": 25.00
+  "totalAmount": 29.99
 }
 ```
 
-**Response:** `200 OK` — returns `{ "message": "Event published successfully", "messageId": "...", "orderId": "..." }`.
+**Response:** `200 OK`
+```json
+{
+  "message": "Event published successfully",
+  "messageId": "3fa85f64-...",
+  "orderId": "3fa85f64-..."
+}
+```
 
 ---
 
-### Minimal API Endpoint — `/test-publish`
+### Minimal API Endpoints
 
-#### `POST /test-publish?text={text}`
-Builds and publishes a `PingEvent` via the EF Core Outbox. No authorization required.
+#### `POST /test-publish?text={message}`
+Publishes a `PingEvent` to the bus. Message text passed as a query parameter.
 
-**Response:** `200 OK` — returns `{ "status": "Published", "message": { "id": "...", "message": "...", "timestamp": "..." } }`.
+**Authorization:** Anonymous
+
+**Response:** `200 OK`
+```json
+{
+  "status": "Published",
+  "message": { "id": "...", "message": "hello", "timestamp": "..." }
+}
+```
+
+---
+
+#### `GET /`
+Redirects to `/swagger`.
+
+**Response:** `302 Redirect`
+
+---
+
+### SignalR Hub — `DsgOmnichannel.Api`
+
+#### Hub route: `/hubs/order`
+Real-time order status hub. Angular clients connect via `@microsoft/signalr` and subscribe to the `ReceiveOrderUpdate` server method.
+
+**Client method:** `ReceiveOrderUpdate` — expected payload shape:
+```json
+{
+  "orderId": "3fa85f64-...",
+  "status": "Allocated",
+  "timestamp": "2026-07-25T22:50:00Z"
+}
+```
 
 ---
 
 ## 2. Infrastructure Configuration (Development)
 
-### `DsgOmnichannel.Api` — `appsettings.Development.json`
+### API (`DsgOmnichannel.Api`)
 
 | Key | Value |
 |-----|-------|
@@ -91,13 +143,11 @@ Builds and publishes a `PingEvent` via the EF Core Outbox. No authorization requ
 | `RabbitMQ:Username` | `guest` |
 | `RabbitMQ:Password` | `guest` |
 
-### `DsgOmnichannel.Worker` — `appsettings.Development.json`
+### Worker (`DsgOmnichannel.Worker`)
 
 | Key | Value |
 |-----|-------|
 | `ConnectionStrings:DefaultConnection` | `Server=localhost,1433;Database=DsgOmnichannelDb;User Id=sa;Password=DSGLoginPassword!;TrustServerCertificate=True;` |
-
-> RabbitMQ connection for the Worker is read at runtime from `configuration["RabbitMQ:Host"]`, `configuration["RabbitMQ:Username"]`, and `configuration["RabbitMQ:Password"]` with defaults of `localhost` / `guest` / `guest` if no appsettings key is present.
 
 ---
 
@@ -112,7 +162,7 @@ Defined in `src/DsgOmnichannel.Api/Controllers/OrdersController.cs`.
 | `CustomerName` | `string` | `[Required]`, `[StringLength(200)]` |
 | `ProductId` | `string` | `[Required]`, `[StringLength(100)]` |
 | `Quantity` | `int` | `[Range(1, int.MaxValue)]` |
-| `TotalAmount` | `decimal` | `[Range(typeof(decimal), "0.01", "79228162514264337593543950335")]` |
+| `TotalAmount` | `decimal` | `[Range(0.01, decimal.MaxValue)]` |
 
 ---
 
@@ -124,7 +174,7 @@ Defined in `src/DsgOmnichannel.Api/Controllers/TestController.cs`.
 | `MessageId` | `Guid` | — |
 | `OrderId` | `Guid` | — |
 | `StoreId` | `string` | — |
-| `CustomerName` | `string?` | — |
+| `CustomerName` | `string?` | Optional; defaults to `"Test Customer"` |
 | `ProductId` | `string` | — |
 | `Quantity` | `int` | — |
 | `TotalAmount` | `decimal` | — |
@@ -138,14 +188,14 @@ Namespace: `DsgOmnichannel.Domain.Entities` — Table: `dbo.Orders`
 
 | Property | Type | Notes |
 |----------|------|-------|
-| `Id` | `Guid` | Primary key, default `Guid.NewGuid()` |
-| `StoreId` | `string` | Max length 50, required |
-| `CustomerName` | `string` | Max length 100, required |
-| `ProductId` | `string` | Max length 50 |
+| `Id` | `Guid` | PK, default `Guid.NewGuid()` |
+| `StoreId` | `string` | Store identifier |
+| `CustomerName` | `string` | — |
+| `ProductId` | `string` | — |
 | `Quantity` | `int` | — |
-| `TotalAmount` | `decimal` | Precision (18, 2) |
-| `Status` | `string` | Runtime values: `"Submitted"`, `"Allocated"`, `"AllocationFailed"` |
-| `CreatedAt` | `DateTime` | Default `DateTime.UtcNow` |
+| `TotalAmount` | `decimal` | — |
+| `Status` | `string` | e.g. `"Submitted"`, `"AllocationFailed"` |
+| `CreatedAt` | `DateTime` | UTC, default `DateTime.UtcNow` |
 
 ---
 
@@ -154,23 +204,10 @@ Namespace: `DsgOmnichannel.Domain.Entities` — Table: `dbo.StoreInventories`
 
 | Property | Type | Notes |
 |----------|------|-------|
-| `Id` | `Guid` | Primary key, default `Guid.NewGuid()` |
-| `StoreId` | `string` | Max length 50, required |
-| `ProductId` | `string` | Max length 50, required |
-| `Quantity` | `int` | Decremented on successful allocation |
-
----
-
-### `OrderStatusHistory`
-Namespace: `DsgOmnichannel.Domain.Entities` — Table: `dbo.OrderStatusHistories`
-
-| Property | Type | Notes |
-|----------|------|-------|
-| `Id` | `Guid` | Primary key |
-| `OrderId` | `Guid` | Foreign reference to dbo.Orders |
-| `Status` | `string` | Values: `"Submitted"`, `"Allocated"`, `"AllocationFailed"` |
-| `Reason` | `string?` | Nullable — describes the status transition reason |
-| `CreatedAtUtc` | `DateTime` | Timestamp of the status transition |
+| `Id` | `Guid` | PK, default `Guid.NewGuid()` |
+| `StoreId` | `string` | Store identifier |
+| `ProductId` | `string` | — |
+| `Quantity` | `int` | Available stock |
 
 ---
 
@@ -179,20 +216,32 @@ Namespace: `DsgOmnichannel.Domain.Entities` — Table: `dbo.AuditLogs`
 
 | Property | Type | Notes |
 |----------|------|-------|
-| `Id` | `Guid` | Primary key, default `Guid.NewGuid()` |
-| `EventType` | `string` | Max length 100, required |
-| `Details` | `string` | Max length 1000 |
-| `CreatedAtUtc` | `DateTime` | Default `DateTime.UtcNow` |
+| `Id` | `Guid` | PK, default `Guid.NewGuid()` |
+| `EventType` | `string` | — |
+| `Details` | `string` | — |
+| `CreatedAtUtc` | `DateTime` | UTC |
 
-> `AuditLog` is defined and mapped in the schema but is not written to by any current consumer or controller.
+---
+
+### `OrderStatusHistory`
+Namespace: `DsgOmnichannel.Domain.Entities` — Table: `dbo.OrderStatusHistories`
+
+| Property | Type | Notes |
+|----------|------|-------|
+| `Id` | `Guid` | PK |
+| `OrderId` | `Guid` | FK to `Orders` |
+| `Status` | `string` | e.g. `"Submitted"`, `"Allocated"`, `"AllocationFailed"` |
+| `Reason` | `string?` | Optional description |
+| `CreatedAtUtc` | `DateTime` | UTC |
 
 ---
 
 ## 5. Event Contracts
 
 ### `OrderPlacedEvent`
-Published by: `OrdersController` (`POST /api/orders`) and `TestController` (`POST /api/test/publish-order-event`).
-Consumed by: `OrderPlacedEventConsumer`, `OrderStatusHistoryConsumer`, `OrderStateMachine` saga.
+Namespace: `DsgOmnichannel.Contracts.Events`
+Published by: `OrdersController` (via MassTransit Outbox) and `TestController`.
+Consumed by: `OrderPlacedEventConsumer`, `OrderStatusHistoryConsumer`, `OrderStateMachine`.
 
 | Property | Type |
 |----------|------|
@@ -207,10 +256,9 @@ Consumed by: `OrderPlacedEventConsumer`, `OrderStatusHistoryConsumer`, `OrderSta
 ---
 
 ### `StoreInventoryAllocatedEvent`
-Published by: `OrderPlacedEventConsumer` (success path, via consumer outbox).
-Consumed by: `OrderStatusHistoryConsumer` (on queue `order-status-history`).
-
-> ⚠ This event is also delivered to the `order-state` queue, but `OrderStateMachine` has no registered handler for it. Messages for this event on that queue will be moved to `order-state_error`.
+Namespace: `DsgOmnichannel.Contracts.Events`
+Published by: `OrderPlacedEventConsumer` (on successful inventory allocation).
+Consumed by: `OrderStatusHistoryConsumer`.
 
 | Property | Type |
 |----------|------|
@@ -223,8 +271,9 @@ Consumed by: `OrderStatusHistoryConsumer` (on queue `order-status-history`).
 ---
 
 ### `AllocationFailedEvent`
-Published by: `OrderPlacedEventConsumer` (failure path, via consumer outbox).
-Consumed by: `OrderStatusHistoryConsumer` (on queue `order-status-history`) and `OrderStateMachine` saga (on queue `order-state`).
+Namespace: `DsgOmnichannel.Contracts.Events`
+Published by: `OrderPlacedEventConsumer` (on insufficient inventory).
+Consumed by: `OrderStatusHistoryConsumer`, `OrderStateMachine`.
 
 | Property | Type |
 |----------|------|
@@ -237,8 +286,9 @@ Consumed by: `OrderStatusHistoryConsumer` (on queue `order-status-history`) and 
 ---
 
 ### `PingEvent`
+Namespace: `DsgOmnichannel.Domain.Events`
 Published by: `TestPublishEndpoint` (`POST /test-publish`).
-Consumed by: `PingEventConsumer` (on queue `ping-event`).
+Consumed by: `PingEventConsumer`.
 
 | Property | Type |
 |----------|------|
@@ -251,31 +301,32 @@ Consumed by: `PingEventConsumer` (on queue `ping-event`).
 ## 6. Saga Entities
 
 ### `OrderState`
-Namespace: `DsgOmnichannel.Infrastructure.Persistence.Sagas` — Table: `dbo.OrderState`
+Namespace: `DsgOmnichannel.Infrastructure.Persistence.Sagas` — Table: `dbo.OrderStates`
 Implements: `MassTransit.SagaStateMachineInstance`
 
 | Property | Type | Notes |
 |----------|------|-------|
-| `CorrelationId` | `Guid` | Primary key, correlated to `OrderId` from events, `ValueGeneratedNever` |
-| `CurrentState` | `string` | State discriminator, max length 64, required |
-| `OrderPlacedDate` | `DateTime` | Set from `CreatedAt` of the `OrderPlacedEvent` |
-| `StoreId` | `string` | Set from `StoreId` of the `OrderPlacedEvent` |
-| `FailureReason` | `string?` | Set from `Reason` of `AllocationFailedEvent`; null on success path |
-| `FaultedAt` | `DateTime?` | Set from `FailedAtUtc` of `AllocationFailedEvent`; null on success path |
+| `CorrelationId` | `Guid` | PK — correlates by `OrderId` |
+| `CurrentState` | `string` | State discriminator |
+| `OrderPlacedDate` | `DateTime` | Set from `OrderPlacedEvent.CreatedAt` |
+| `StoreId` | `string` | Set from `OrderPlacedEvent.StoreId` |
+| `FailureReason` | `string?` | Set from `AllocationFailedEvent.Reason` |
+| `FaultedAt` | `DateTime?` | Set from `AllocationFailedEvent.FailedAtUtc` |
 
 **State machine:** `OrderStateMachine` (in `DsgOmnichannel.Worker`)
 
-**Defined states:** `Initial`, `Processing`, `Faulted`, `Final`
+**Defined states:** `Processing`, `Faulted`
 
-**Defined events and correlations:**
+**Defined events:**
 
-| Event Property | Event Type | Correlation Expression |
-|---|---|---|
+| Event Property | Event Type | Correlates By |
+|----------------|------------|---------------|
 | `OrderPlaced` | `OrderPlacedEvent` | `context.Message.OrderId` |
 | `AllocationFailed` | `AllocationFailedEvent` | `context.Message.OrderId` |
 
-**State transitions:**
-- `Initial` + `OrderPlaced` → sets `OrderPlacedDate` and `StoreId` → transitions to `Processing`
-- `Processing` + `AllocationFailed` → sets `FailureReason` and `FaultedAt`, updates `dbo.Orders.Status` to `"AllocationFailed"` → transitions to `Faulted`
+**Transitions:**
 
-> No `StoreInventoryAllocatedEvent` handler is defined. The saga has no terminal success state — `Processing` is never closed on the happy path.
+| Trigger | From | To | Side Effect |
+|---------|------|----|-------------|
+| `OrderPlaced` | `Initial` | `Processing` | Sets `OrderPlacedDate`, `StoreId` |
+| `AllocationFailed` | `Processing` | `Faulted` | Sets `FailureReason`, `FaultedAt`; updates `Order.Status = "AllocationFailed"` in DB |

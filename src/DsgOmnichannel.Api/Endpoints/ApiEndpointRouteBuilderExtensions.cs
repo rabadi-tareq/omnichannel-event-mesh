@@ -1,4 +1,5 @@
 using DsgOmnichannel.Api.HealthChecks;
+using DsgOmnichannel.Api.Hubs;
 
 namespace DsgOmnichannel.Api.Endpoints;
 
@@ -10,6 +11,7 @@ internal static class ApiEndpointRouteBuilderExtensions
 
         endpoints.MapControllers();
         endpoints.MapGet("/", () => Results.Redirect("/swagger"));
+        endpoints.MapHub<OrderHub>("/hubs/order");
         endpoints.MapApiHealthEndpoint();
         endpoints.MapTestPublishEndpoint();
 

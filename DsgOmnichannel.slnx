@@ -7,6 +7,10 @@
     <Project Path="src/DsgOmnichannel.Contracts/DsgOmnichannel.Contracts.csproj" />
     <Project Path="src/DsgOmnichannel.Domain/DsgOmnichannel.Domain.csproj" />
     <Project Path="src/DsgOmnichannel.Infrastructure/DsgOmnichannel.Infrastructure.csproj" />
+    <Project Path="src/DsgOmnichannel.Web/DsgOmnichannel.Web.esproj">
+      <Build />
+      <Deploy />
+    </Project>
     <Project Path="src/DsgOmnichannel.Worker/DsgOmnichannel.Worker.csproj" />
   </Folder>
 </Solution>

@@ -9,6 +9,10 @@
       {
         "Path": "src\\DsgOmnichannel.Worker\\DsgOmnichannel.Worker.csproj",
         "Action": "Start"
+      },
+      {
+        "Path": "src\\DsgOmnichannel.Web\\DsgOmnichannel.Web.esproj",
+        "Action": "Start"
       }
     ]
   }

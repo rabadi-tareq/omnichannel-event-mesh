@@ -1,0 +1,26 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <h2>Omnichannel Real-Time Order Stream</h2>
+    <div class="connection-status">
+      Status:
+      <span [class]="'badge badge-' + signalRService.connectionState().toLowerCase()">
+        {{ signalRService.connectionState() }}
+      </span>
+    </div>
+  </header>
+
+  <main class="dashboard-content">
+    <section class="latest-event-card">
+      <h3>Latest Event Received</h3>
+      @if (signalRService.latestUpdate(); as update) {
+      <div class="event-details">
+        <p><strong>Order ID:</strong> {{ update.orderId }}</p>
+        <p><strong>Status:</strong> <span class="status-tag">{{ update.status }}</span></p>
+        <p><strong>Timestamp:</strong> {{ update.timestamp | date:'mediumTime' }}</p>
+      </div>
+      } @else {
+      <p class="placeholder-text">Waiting for order updates from event mesh...</p>
+      }
+    </section>
+  </main>
+</div>

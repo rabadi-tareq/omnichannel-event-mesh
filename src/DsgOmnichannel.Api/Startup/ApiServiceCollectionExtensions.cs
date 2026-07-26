@@ -16,6 +16,7 @@ internal static class ApiServiceCollectionExtensions
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
+        services.AddSignalR();
 
         return services;
     }

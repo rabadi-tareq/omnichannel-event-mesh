@@ -14,7 +14,7 @@
 * **Framework**: .NET 10 / C# 13[cite: 2].
 * **Persistence**: Entity Framework Core 10, SQL Server 2022 (Docker with named volume `dsg-sqldata`)[cite: 2].
 * **Security**: JWT Bearer Token Authentication, Policy-Based Authorization, Header Context Propagation via MassTransit[cite: 2].
-* **Frontend (Target)**: Angular 19+ (Signals, Functional HTTP Interceptors)[cite: 2].
+* **Frontend (Target)**: Angular 22 (Signals, Zoneless Change Detection, Functional HTTP Interceptors)[cite: 2].
 
 ## 4. Project File Organization & Namespaces
 When generating code, adhere strictly to the existing solution layout:
@@ -41,6 +41,13 @@ When generating code, adhere strictly to the existing solution layout:
 * **Response Type**: Generate simple, inline examples in the chat when asked (e.g., SQL queries, curl commands, HTTP payloads). Only create files when explicitly requested. Keep responses concise and focused.
 * **Minimal Context Gathering**: Avoid excessive exploration of the codebase before responding. Read only what's necessary to answer the specific question.
 * **Verify Configuration Before Generating Examples**: Always check `launchSettings.json` for actual port and protocol before generating HTTP requests or commands targeting the API. Never assume http://localhost:5000 - verify the actual configuration.
+* **Angular Build Validation**: After every Angular file change, run `npx ng build --configuration=development` from `src/DsgOmnichannel.Web/` to validate the build — the same way `run_build` is used for .NET. Never finish an Angular task without a green build.
+* **Angular SSR Rules** (Angular 22 / `@angular/ssr`):
+  - Always use `provideZonelessChangeDetection()` — never `provideZoneChangeDetection`. Zone.js is not available in the SSR route-extraction worker.
+  - Always use `provideHttpClient(withFetch())` — `withFetch()` is required for SSR Node.js compatibility.
+  - The `main.server.ts` bootstrap function **must** accept and forward a `BootstrapContext`: `(context: BootstrapContext) => bootstrapApplication(App, config, context)`. Omitting `context` causes `NG0401: Missing Platform`.
+  - Any service that uses browser-only APIs (WebSocket, SignalR, etc.) must guard with `isPlatformBrowser(inject(PLATFORM_ID))`.
+  - Real-time or browser-only routes must use `RenderMode.Client` in `app.routes.server.ts`.
 
 ## 7. Available Skills
 When the user asks to generate or refresh solution documentation, use the skill files below for detailed execution instructions.
