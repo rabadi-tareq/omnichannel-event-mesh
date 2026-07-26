@@ -26,7 +26,7 @@ export class SignalRService {
 
   // Angular Signal to hold real-time order updates
   public latestUpdate = signal<OrderStatusUpdate | null>(null);
-  public connectionState = signal<string>('Disconnected');
+  public connectionState = signal<string>('Initializing');
 
   // Per-order status map keyed by orderId
   public orderStatuses = signal<Record<string, OrderStatusUpdate>>({});
@@ -45,21 +45,28 @@ export class SignalRService {
       .withAutomaticReconnect()
       .build();
 
-    this.connectionState.set('Connecting');
+    const timeoutHandle = setTimeout(() => {
+      if (this.connectionState() === 'Initializing') {
+        this.connectionState.set('Disconnected');
+        console.warn('SignalR: no ServerReady received within 60 seconds.');
+      }
+    }, 60_000);
 
-    this.hubConnection
-      .start()
-      .then(() => {
-        this.connectionState.set('Connected');
-        console.log('SignalR Connection Established');
-      })
-      .catch(err => {
-        this.connectionState.set('Error');
-        console.error('Error starting SignalR connection:', err);
-      });
-
+    this.registerServerReadyListener(timeoutHandle);
     this.registerOrderStateListener();
     this.registerOrderJourneyListener();
+
+    this.hubConnection.start()
+      .catch(err => console.error('SignalR connection error:', err));
+  }
+
+
+  private registerServerReadyListener(timeoutHandle: ReturnType<typeof setTimeout>): void {
+    this.hubConnection.on('ServerReady', () => {
+      clearTimeout(timeoutHandle);
+      this.connectionState.set('Connected');
+      console.log('SignalR: ServerReady received — API is up.');
+    });
   }
 
   private registerOrderStateListener(): void {

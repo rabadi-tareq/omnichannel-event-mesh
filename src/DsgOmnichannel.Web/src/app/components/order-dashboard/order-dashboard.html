@@ -2,10 +2,16 @@
   <header class="dashboard-header">
     <h2>Omnichannel Real-Time Order Stream</h2>
     <div class="connection-status">
-      Status:
-      <span [class]="'badge badge-' + signalRService.connectionState().toLowerCase()">
-        {{ signalRService.connectionState() }}
-      </span>
+      @if (signalRService.connectionState() === 'Initializing') {
+        <span class="badge badge-initializing">
+          <span class="spinner" aria-hidden="true"></span> Initializing…
+        </span>
+      } @else {
+        Status:
+        <span [class]="'badge badge-' + signalRService.connectionState().toLowerCase()">
+          {{ signalRService.connectionState() }}
+        </span>
+      }
     </div>
   </header>
 

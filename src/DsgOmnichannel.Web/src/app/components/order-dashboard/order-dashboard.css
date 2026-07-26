@@ -31,9 +31,36 @@
   color: #b06000;
 }
 
-.badge-disconnected, .badge-error {
+.badge-disconnected {
+  background-color: #f1f3f4;
+  color: #5f6368;
+}
+
+.badge-error {
   background-color: #fce8e6;
   color: #c5221f;
+}
+
+.badge-initializing {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .latest-event-card {

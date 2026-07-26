@@ -6,6 +6,7 @@ public class OrderHub : Hub
 {
     public override async Task OnConnectedAsync()
     {
+        await Clients.Caller.SendAsync("ServerReady");
         await base.OnConnectedAsync();
     }
 
