@@ -44,7 +44,7 @@ public class CreateOrderRequest
     public string StoreId { get; set; } = string.Empty;
 
     [Required]
-    [StringLength(200)]
+    [StringLength(100)]
     public string CustomerName { get; set; } = string.Empty;
 
     [Required]
