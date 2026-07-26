@@ -1,1 +1,6 @@
-<app-order-dashboard></app-order-dashboard>
+<nav class="app-nav">
+  <span class="app-nav-brand">DSG Omnichannel POC</span>
+  <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a>
+  <a routerLink="/order-journey" routerLinkActive="active">Order Journey</a>
+</nav>
+<router-outlet />

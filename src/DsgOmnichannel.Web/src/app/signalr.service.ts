@@ -8,12 +8,21 @@ export interface OrderStatusUpdate {
   timestamp: string;
 }
 
+export interface OrderJourneyEvent {
+  displayOrderId: string;
+  components: string[];
+  eventName: string;
+  messages: string[];
+  timestamp: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class SignalRService {
   private hubConnection!: signalR.HubConnection;
   private platformId = inject(PLATFORM_ID);
+  private started = false;
 
   // Angular Signal to hold real-time order updates
   public latestUpdate = signal<OrderStatusUpdate | null>(null);
@@ -22,10 +31,15 @@ export class SignalRService {
   // Per-order status map keyed by orderId
   public orderStatuses = signal<Record<string, OrderStatusUpdate>>({});
 
+  // Order journey event log (ascending — oldest first)
+  public orderJourneyEvents = signal<OrderJourneyEvent[]>([]);
+
   public startConnection(): void {
-    if (!isPlatformBrowser(this.platformId)) {
+    if (!isPlatformBrowser(this.platformId) || this.started) {
       return;
     }
+    this.started = true;
+
     this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl('/hubs/order')
       .withAutomaticReconnect()
@@ -45,6 +59,7 @@ export class SignalRService {
       });
 
     this.registerOrderStateListener();
+    this.registerOrderJourneyListener();
   }
 
   private registerOrderStateListener(): void {
@@ -53,4 +68,15 @@ export class SignalRService {
       this.orderStatuses.update(current => ({ ...current, [update.orderId]: update }));
     });
   }
+
+  private registerOrderJourneyListener(): void {
+    this.hubConnection.on('ReceiveOrderJourneyEvent', (event: OrderJourneyEvent) => {
+      this.orderJourneyEvents.update(events => [...events, event]);
+    });
+  }
+
+  public clearJourneyEvents(): void {
+    this.orderJourneyEvents.set([]);
+  }
 }
+

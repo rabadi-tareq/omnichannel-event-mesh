@@ -1,1 +1,32 @@
 /* You can add global styles to this file, and also import other style files */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f5f5f5; font-family: 'Segoe UI', sans-serif; }
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: .75rem 1.5rem;
+  background: #1a1a2e;
+  color: #e8e8f0;
+}
+
+.app-nav-brand {
+  font-weight: 700;
+  font-size: .95rem;
+  margin-right: auto;
+  color: #90caf9;
+}
+
+.app-nav a {
+  color: #b0bec5;
+  text-decoration: none;
+  font-size: .875rem;
+  padding: .3rem .6rem;
+  border-radius: 4px;
+  transition: background .15s;
+}
+
+.app-nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
+.app-nav a.active { color: #90caf9; background: rgba(144,202,249,.12); }

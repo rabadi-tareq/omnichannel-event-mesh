@@ -27,6 +27,7 @@ When generating code, adhere strictly to the existing solution layout:
 ## 5. Execution Directives
 * **No Speculative Decisions**: Assume shared infrastructure and models are centralized in `DsgOmnichannel.Infrastructure`[cite: 2].
 * **Idempotency Standards**: Consumers using `ApplicationDbContext` must rely on MassTransit's native EF Core `InboxState` evaluation[cite: 1, 2]. Do not invent manual custom duplicate checking logic inside consumer bodies when MassTransit Inbox is enabled.
+* **Display Order ID Format**: Use the format "{Quantity} Count of {ProductId}" for display order IDs (e.g., "8 Count of Men's Shoes"). Do not include timestamps in the display order ID; timestamps should appear as a separate field in SignalR messages.
 
 ## 6. Developer Workflow & Response Guidelines
 * **Step-by-Step Verification**: User validates each small step before proceeding to the next. Never assume multiple follow-up steps or create elaborate multi-step plans unless explicitly requested.

@@ -1,0 +1,247 @@
+.journey-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 0.9rem;
+}
+
+/* ── Panels ── */
+.panel {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+.panel h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: .5rem;
+}
+
+.panel h3 {
+  margin: 1rem 0 .5rem;
+  font-size: .85rem;
+  font-weight: 600;
+  color: #555;
+}
+
+/* ── Inventory table ── */
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: .75rem;
+}
+
+.inv-table th,
+.inv-table td {
+  text-align: left;
+  padding: .45rem .6rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.inv-table th {
+  font-weight: 600;
+  color: #555;
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.actions {
+  display: flex;
+  gap: .4rem;
+}
+
+/* ── Forms ── */
+.form-row {
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.text-input {
+  flex: 1;
+  min-width: 160px;
+  padding: .4rem .6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .875rem;
+}
+
+.qty-input {
+  width: 80px;
+  padding: .4rem .6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .875rem;
+}
+
+.store-note {
+  margin: .5rem 0 0;
+  color: #777;
+  font-size: .8rem;
+}
+
+/* ── Buttons ── */
+.btn {
+  padding: .38rem .75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: .8rem;
+  font-weight: 500;
+  transition: opacity .15s;
+}
+.btn:disabled { opacity: .5; cursor: default; }
+
+.btn-primary  { background: #1a73e8; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #1558b0; }
+.btn-save     { background: #34a853; color: #fff; }
+.btn-edit     { background: #fbbc04; color: #1a1a1a; }
+.btn-cancel   { background: #e0e0e0; color: #333; }
+.btn-danger   { background: #d32f2f; color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #b71c1c; }
+.btn-delete   { background: #ea4335; color: #fff; }
+.btn-export   { background: #263238; color: #90caf9; border: 1px solid #37474f; }
+
+/* ── Ready for Pickup ── */
+.pickup-panel {
+  border-color: #1b5e20;
+  background: #f1f8f1;
+}
+
+.pickup-panel h2 {
+  color: #1b5e20;
+  border-bottom-color: #c8e6c9;
+}
+
+.pickup-panel h2::before {
+  content: '✓ ';
+}
+
+.pickup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem .25rem;
+  border-bottom: 1px solid #c8e6c9;
+}
+
+.pickup-row:last-child { border-bottom: none; }
+
+.pickup-actions {
+  display: flex;
+  gap: .5rem;
+}
+
+.pickup-order {
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: .9rem;
+}
+
+/* ── Event Log ── */
+.log-panel { background: #0f1117; border-color: #2a2a3a; }
+.log-panel h2 { color: #e8e8f0; border-bottom-color: #2a2a3a; }
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .75rem;
+}
+
+.log-controls {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+}
+
+.conn-badge {
+  font-size: .75rem;
+  padding: .2rem .55rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.conn-connected    { background: #1a3a1a; color: #4caf50; }
+.conn-connecting   { background: #3a3a1a; color: #fbbc04; }
+.conn-disconnected,
+.conn-error        { background: #3a1a1a; color: #ef5350; }
+
+.empty-note {
+  color: #666;
+  font-style: italic;
+  font-size: .82rem;
+}
+.log-panel .empty-note { color: #555; }
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  max-height: 420px;
+  overflow-y: auto;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: .78rem;
+}
+
+.log-entry {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  padding: .45rem .6rem;
+  border-radius: 4px;
+  background: #161820;
+  border-left: 2px solid #2a2a3a;
+}
+
+.log-entry-header {
+  display: flex;
+  gap: .6rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.log-components {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+}
+
+.log-messages {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  padding-left: .4rem;
+}
+
+.log-ts    { color: #6a6a8a; min-width: 92px; flex-shrink: 0; font-family: 'Consolas', monospace; font-size: .78rem; }
+.log-event { color: #b0bec5; font-weight: 600; font-family: 'Consolas', monospace; font-size: .78rem; }
+.log-order { color: #fff176; font-weight: 600; font-family: 'Consolas', monospace; font-size: .78rem; }
+.log-msg   { color: #cfd8dc; font-family: 'Consolas', monospace; font-size: .76rem; }
+
+/* Component colour tags */
+.log-tag {
+  font-size: .7rem;
+  font-weight: 700;
+  padding: .1rem .45rem;
+  border-radius: 10px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.tag-api    { background: #0d47a1; color: #90caf9; }
+.tag-sql    { background: #1b5e20; color: #a5d6a7; }
+.tag-worker { background: #4a148c; color: #ce93d8; }
+.tag-rabbit { background: #bf360c; color: #ffccbc; }
+.tag-default { background: #37474f; color: #cfd8dc; }

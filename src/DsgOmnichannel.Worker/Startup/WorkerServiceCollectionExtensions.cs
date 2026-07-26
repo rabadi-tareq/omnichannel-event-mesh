@@ -3,6 +3,7 @@ using DsgOmnichannel.Infrastructure.Persistence.Sagas;
 using DsgOmnichannel.Worker.Consumers;
 using DsgOmnichannel.Worker.Extensions;
 using DsgOmnichannel.Worker.Sagas;
+using DsgOmnichannel.Worker.Services;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
@@ -43,6 +44,7 @@ internal static class WorkerServiceCollectionExtensions
         {
             // Register consumers
             x.AddConsumer<OrderPlacedEventConsumer>();
+            x.AddConsumer<OrderCancelledEventConsumer>();
             x.AddConsumer<OrderStatusHistoryConsumer>();
             x.AddConsumer<OrderPickedUpConsumer>();
 
@@ -81,6 +83,9 @@ internal static class WorkerServiceCollectionExtensions
                 cfg.ConfigureEndpoints(context);
             });
         });
+
+        services.AddSingleton<WorkerSignalRService>();
+        services.AddHostedService(sp => sp.GetRequiredService<WorkerSignalRService>());
 
         return services;
     }

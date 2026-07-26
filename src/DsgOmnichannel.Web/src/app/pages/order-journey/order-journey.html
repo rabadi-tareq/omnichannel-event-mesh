@@ -1,0 +1,167 @@
+<div class="journey-page">
+
+  <!-- ── INVENTORY PANEL ── -->
+  <section class="panel">
+    <h2>Inventory — Store STORE-001</h2>
+
+    <table class="inv-table" *ngIf="inventory().length > 0; else noInventory">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of inventory(); track item.id) {
+          <tr>
+            <td>{{ item.productId }}</td>
+            <td>
+              @if (editingId() === item.id) {
+                <input type="number" [(ngModel)]="editingQuantity" min="0" class="qty-input" />
+              } @else {
+                {{ item.quantity }}
+              }
+            </td>
+            <td class="actions">
+              @if (editingId() === item.id) {
+                <button class="btn btn-save" (click)="saveEdit(item)">Save</button>
+                <button class="btn btn-cancel" (click)="cancelEdit()">Cancel</button>
+              } @else {
+                <button class="btn btn-edit" (click)="startEdit(item)">Edit Qty</button>
+                <button class="btn btn-delete" (click)="deleteProduct(item)">Delete</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <ng-template #noInventory>
+      <p class="empty-note">No inventory items yet. Add a product below.</p>
+    </ng-template>
+
+    <div class="seed-form">
+      <h3>Add / Update Product</h3>
+      <div class="form-row">
+        <input
+          type="text"
+          placeholder="Product name (e.g. Men's Shoes)"
+          [ngModel]="newProductId()"
+          (ngModelChange)="newProductId.set($event)"
+          class="text-input" />
+        <input
+          type="number"
+          placeholder="Qty"
+          [ngModel]="newQuantity()"
+          (ngModelChange)="newQuantity.set(+$event)"
+          min="1"
+          class="qty-input" />
+        <button class="btn btn-primary" (click)="seedProduct()">Save</button>
+      </div>
+      @if (seedError()) {
+        <p class="error">{{ seedError() }}</p>
+      }
+    </div>
+  </section>
+
+  <!-- ── PLACE ORDER ── -->
+  <section class="panel">
+    <h2>Place Order</h2>
+    <div class="form-row">
+      <select
+        [ngModel]="selectedProductId()"
+        (ngModelChange)="selectedProductId.set($event)"
+        class="text-input">
+        <option value="">-- Select a product --</option>
+        @for (item of inventory(); track item.id) {
+          <option [value]="item.productId">{{ item.productId }} ({{ item.quantity }} in stock)</option>
+        }
+      </select>
+      <input
+        type="number"
+        placeholder="Qty"
+        [ngModel]="orderQuantity()"
+        (ngModelChange)="orderQuantity.set(+$event)"
+        min="1"
+        class="qty-input" />
+      <button
+        class="btn btn-primary"
+        (click)="placeOrder()"
+        [disabled]="orderSubmitting()">
+        {{ orderSubmitting() ? 'Placing…' : 'Place Order' }}
+      </button>
+    </div>
+    <p class="store-note">Store: <strong>STORE-001</strong></p>
+    @if (orderError()) {
+      <p class="error">{{ orderError() }}</p>
+    }
+  </section>
+
+  <!-- ── READY FOR PICKUP ── -->
+  @if (readyForPickup().length > 0) {
+    <section class="panel pickup-panel">
+      <h2>Ready for Pickup</h2>
+      @for (order of readyForPickup(); track order.orderId) {
+        <div class="pickup-row">
+          <span class="pickup-order">{{ order.displayOrderId }}</span>
+          <div class="pickup-actions">
+            <button
+              class="btn btn-primary"
+              (click)="confirmPickup(order.orderId)"
+              [disabled]="isPickupPending(order.orderId) || isCancelPending(order.orderId)">
+              {{ isPickupPending(order.orderId) ? 'Confirming…' : 'Confirm Pickup' }}
+            </button>
+            <button
+              class="btn btn-danger"
+              (click)="cancelOrder(order.orderId)"
+              [disabled]="isCancelPending(order.orderId) || isPickupPending(order.orderId)">
+              {{ isCancelPending(order.orderId) ? 'Cancelling…' : 'Cancel Pickup' }}
+            </button>
+          </div>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- ── EVENT LOG ── -->
+  <section class="panel log-panel">
+    <div class="log-header">
+      <h2>Order Journey Log</h2>
+      <div class="log-controls">
+        <span class="conn-badge" [class]="'conn-' + connectionState().toLowerCase()">
+          {{ connectionState() }}
+        </span>
+        <button class="btn btn-export" (click)="exportLog()" [disabled]="journeyEvents().length === 0">Export JSON</button>
+        <button class="btn btn-cancel" (click)="clearLog()">Clear</button>
+      </div>
+    </div>
+
+    @if (journeyEvents().length === 0) {
+      <p class="empty-note">Waiting for events… Place an order above to see the journey.</p>
+    }
+
+    <div class="log-list" #logList>
+      @for (event of journeyEvents(); track $index) {
+        <div class="log-entry">
+          <div class="log-entry-header">
+            <span class="log-ts">{{ event.timestamp | date:'HH:mm:ss.SSS' }}</span>
+            <span class="log-event">{{ event.eventName }}</span>
+            <span class="log-order">{{ event.displayOrderId }}</span>
+          </div>
+          <div class="log-components">
+            @for (comp of event.components; track comp) {
+              <span class="log-tag" [ngClass]="componentClass(comp)">{{ comp }}</span>
+            }
+          </div>
+          <div class="log-messages">
+            @for (msg of event.messages; track $index) {
+              <div class="log-msg">— {{ msg }}</div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+</div>
