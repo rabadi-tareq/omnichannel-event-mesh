@@ -13,4 +13,7 @@
     </Project>
     <Project Path="src/DsgOmnichannel.Worker/DsgOmnichannel.Worker.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DsgOmnichannel.IntegrationTests/DsgOmnichannel.IntegrationTests.csproj" />
+  </Folder>
 </Solution>

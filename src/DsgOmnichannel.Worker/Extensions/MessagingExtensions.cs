@@ -28,6 +28,7 @@ internal static class MessagingExtensions
             // Retry on transient infrastructure faults
             r.Handle<TimeoutException>();
             r.Handle<DbUpdateException>();
+            r.Handle<DbUpdateConcurrencyException>();
             r.Handle<HttpRequestException>();
 
             // Do not retry on non-transient domain validation errors

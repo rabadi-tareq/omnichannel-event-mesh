@@ -1,8 +1,6 @@
 using DsgOmnichannel.Contracts.Events;
-using DsgOmnichannel.Infrastructure.Persistence;
 using DsgOmnichannel.Infrastructure.Persistence.Sagas;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 
 namespace DsgOmnichannel.Worker.Sagas;
 
@@ -30,35 +28,28 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
 
         During(Processing,
             When(AllocationFailed)
-                .ThenAsync(async context =>
+                .Then(context =>
                 {
+                    // Slice 2.2 fix: saga owns only its own state fields.
+                    // Order.Status is exclusively owned by OrderPlacedEventConsumer,
+                    // which already committed "AllocationFailed" before publishing this event.
+                    // Removing the inner DbContext scope eliminates the split-transaction gap
+                    // (Known Gap #6) — there is now exactly one transaction per authority.
                     context.Saga.FailureReason = context.Message.Reason;
                     context.Saga.FaultedAt = context.Message.FailedAtUtc;
-
-                    var serviceProvider = context.GetPayload<IServiceProvider>();
-                    using var scope = serviceProvider.CreateScope();
-                    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                    var order = await dbContext.Orders.FindAsync(context.Message.OrderId);
-                    if (order != null)
-                    {
-                        order.Status = "AllocationFailed";
-                        await dbContext.SaveChangesAsync();
-                    }
                 })
-                .TransitionTo(Faulted));
+                .Finalize());
 
-                        During(Processing,
-                            When(OrderPickedUp)
-                                .Finalize());
+        During(Processing,
+            When(OrderPickedUp)
+                .Finalize());
 
-                        SetCompletedWhenFinalized();
-                    }
+        SetCompletedWhenFinalized();
+    }
 
-                    public State Processing { get; private set; } = null!;
-                    public State Faulted { get; private set; } = null!;
+    public State Processing { get; private set; } = null!;
 
-                    public Event<OrderPlacedEvent> OrderPlaced { get; private set; } = null!;
-                    public Event<AllocationFailedEvent> AllocationFailed { get; private set; } = null!;
-                    public Event<OrderPickedUpEvent> OrderPickedUp { get; private set; } = null!;
+    public Event<OrderPlacedEvent> OrderPlaced { get; private set; } = null!;
+    public Event<AllocationFailedEvent> AllocationFailed { get; private set; } = null!;
+    public Event<OrderPickedUpEvent> OrderPickedUp { get; private set; } = null!;
 }

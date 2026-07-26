@@ -40,6 +40,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             builder.HasKey(x => x.Id);
             builder.Property(x => x.StoreId).HasMaxLength(50).IsRequired();
             builder.Property(x => x.ProductId).HasMaxLength(50).IsRequired();
+            builder.Property(x => x.RowVersion).IsRowVersion();
         });
 
         modelBuilder.Entity<OrderState>(builder =>
